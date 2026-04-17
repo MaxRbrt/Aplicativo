@@ -1,299 +1,169 @@
-import React, { useState } from 'react';
-import { StyleSheet, Image, Pressable, View, Text, ScrollView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { AppColors } from '@/constants/app-theme';
+import { Produto, carregarProdutos, carregarResumoFinanceiroAdmin, carregarUsuarios, formatarMoeda, limparUsuarioAtual } from '@/services/storage';
 
-// ─── Paleta (mesma do restante do app) ──────────────────────────────────────
-const C = {
-  bg: '#0A0F1E',
-  surface: '#111827',
-  surfaceHigh: '#162032',
-  border: '#1E2A3A',
-  accent: '#3B82F6',
-  accentGlow: '#1D4ED8',
-  accentSoft: '#1D4ED815',
-  amber: '#F59E0B',
-  amberSoft: '#F59E0B15',
-  text: '#F1F5F9',
-  muted: '#64748B',
-  mutedLight: '#94A3B8',
-  white: '#FFFFFF',
-};
+const C = AppColors;
+
+const acoes: { label: string; sub: string; rota: Href }[] = [
+  { label: 'Novo produto', sub: 'Cadastrar item', rota: '/(admin)/cadastro' },
+  { label: 'Produtos', sub: 'Consultar estoque', rota: '/(admin)/cadastro' },
+  { label: 'Faturamento', sub: 'Vendas e lucro', rota: '/(admin)/faturamento' },
+  { label: 'Usuários', sub: 'Cadastrar e consultar', rota: '/(admin)/usuarios' },
+];
 
 export default function AdminHome() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email?: string }>();
-  const [pressingBtn, setPressingBtn] = useState(false);
+  const [totalProdutos, setTotalProdutos] = useState(0);
+  const [totalEstoque, setTotalEstoque] = useState(0);
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
+  const [faturamento, setFaturamento] = useState(0);
+  const [lucro, setLucro] = useState(0);
   const [pressingOut, setPressingOut] = useState(false);
+  const [pressingAcao, setPressingAcao] = useState<string | null>(null);
+
+  const carregarResumo = useCallback(async () => {
+    try {
+      const [produtos, usuarios, resumoFinanceiro] = await Promise.all([
+        carregarProdutos(),
+        carregarUsuarios(),
+        carregarResumoFinanceiroAdmin(),
+      ]);
+      setTotalProdutos(produtos.length);
+      setTotalUsuarios(usuarios.length);
+      setTotalEstoque(produtos.reduce((acc: number, produto: Produto) => acc + (parseInt(produto.estoque || '0', 10) || 0), 0));
+      setFaturamento(resumoFinanceiro.faturamentoTotal);
+      setLucro(resumoFinanceiro.lucroTotal);
+    } catch {
+      setTotalProdutos(0);
+      setTotalUsuarios(0);
+      setTotalEstoque(0);
+      setFaturamento(0);
+      setLucro(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarResumo();
+  }, [carregarResumo]);
+
+  const metricas = useMemo(
+    () => [
+      { label: 'Produtos', valor: `${totalProdutos}`, sub: 'cadastrados', color: C.accent, bg: C.accentSoft },
+      { label: 'Estoque', valor: `${totalEstoque}`, sub: 'itens totais', color: C.green, bg: C.greenSoft },
+      { label: 'Usuários', valor: `${totalUsuarios}`, sub: 'cadastrados', color: C.amber, bg: C.amberSoft },
+      { label: 'Vendas', valor: formatarMoeda(faturamento), sub: 'faturamento', color: C.accent, bg: C.accentSoft },
+      { label: 'Lucro', valor: formatarMoeda(lucro), sub: 'estimado', color: C.green, bg: C.greenSoft },
+    ],
+    [totalProdutos, totalEstoque, totalUsuarios, faturamento, lucro]
+  );
 
   const nomeAdmin = email ? email.split('@')[0] : 'admin';
 
   return (
     <View style={styles.screen}>
-      {/* Glow de fundo — âmbar para diferenciar do painel aluno */}
-      <View style={styles.glowTop} />
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Logo ── */}
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoBg}>
-            <Image
-              source={require('@/assets/images/teste.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.topBar}>
+          <View style={styles.brandRow}>
+            <View style={styles.brandMark}>
+              <Text style={styles.brandMarkText}>F</Text>
+            </View>
+            <View>
+              <Text style={styles.brand}>FAST</Text>
+              <Text style={styles.role}>ADMIN</Text>
+            </View>
           </View>
-        </View>
-
-        {/* ── Saudação ── */}
-        <View style={styles.greetRow}>
-          <View style={styles.greetLeft}>
-            <Text style={styles.kicker}>Painel Administrativo</Text>
-            <Text style={styles.greetName}>Olá, {nomeAdmin} 🛡️</Text>
-          </View>
-
           <Pressable
-            style={[styles.outlineBtn, pressingOut && styles.btnPressed]}
-            onPress={() => router.replace('/login')}
+            style={[styles.secondaryButton, pressingOut && styles.pressed]}
+            onPress={async () => {
+              await limparUsuarioAtual();
+              router.replace('/entrar');
+            }}
             onPressIn={() => setPressingOut(true)}
             onPressOut={() => setPressingOut(false)}
           >
-            <Text style={styles.outlineBtnText}>Sair</Text>
+            <Text style={styles.secondaryButtonText}>Sair</Text>
           </Pressable>
         </View>
 
-        {/* ── Chip de e-mail ── */}
-        <View style={styles.chip}>
-          <Text style={styles.chipText}>🛡️ {email ?? 'admin'}</Text>
+        <View style={styles.hero}>
+          <Text style={styles.kicker}>Painel de controle</Text>
+          <Text style={styles.title}>Olá, {nomeAdmin}</Text>
+          <Text style={styles.subtitle}>{email ?? 'conta admin'}</Text>
         </View>
 
-        {/* ── Card informativo ── */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>O que você pode fazer</Text>
-          <Text style={styles.cardText}>
-            Use a aba{' '}
-            <Text style={styles.highlight}>Cadastro</Text>
-            {' '}para simular o cadastro de um produto (sem banco de dados).
-          </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Visão geral</Text>
         </View>
 
-        {/* ── Quick stats ── */}
-        <View style={styles.quickGrid}>
-          <View style={[styles.quickCard, styles.quickCardAmber]}>
-            <Text style={styles.quickEmoji}>➕</Text>
-            <Text style={styles.quickTitle}>Cadastro</Text>
-            <Text style={styles.quickSub}>Nome e preço</Text>
-          </View>
-
-          <View style={styles.quickCard}>
-            <Text style={styles.quickEmoji}>✅</Text>
-            <Text style={styles.quickTitle}>Simulação</Text>
-            <Text style={styles.quickSub}>Alert ao salvar</Text>
-          </View>
+        <View style={styles.grid}>
+          {metricas.map((item) => (
+            <View key={item.label} style={[styles.metricCard, { borderColor: item.color, backgroundColor: item.bg }]}>
+              <Text style={[styles.metricValue, { color: item.color }]}>{item.valor}</Text>
+              <Text style={styles.metricLabel}>{item.label}</Text>
+              <Text style={styles.metricSub}>{item.sub}</Text>
+            </View>
+          ))}
         </View>
 
-        {/* ── Botão principal ── */}
-        <Pressable
-          style={[styles.primaryBtn, pressingBtn && styles.btnPressed]}
-          onPress={() => router.push('/(admin)/cadastro')}
-          onPressIn={() => setPressingBtn(true)}
-          onPressOut={() => setPressingBtn(false)}
-        >
-          <Text style={styles.primaryBtnText}>Ir para Cadastro →</Text>
-        </Pressable>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ações rápidas</Text>
+        </View>
+
+        <View style={styles.actionGrid}>
+          {acoes.map((acao) => (
+            <Pressable
+              key={acao.label}
+              style={[styles.actionCard, pressingAcao === acao.label && styles.pressed]}
+              onPress={() => router.push(acao.rota)}
+              onPressIn={() => setPressingAcao(acao.label)}
+              onPressOut={() => setPressingAcao(null)}
+            >
+              <Text style={styles.actionLabel}>{acao.label}</Text>
+              <Text style={styles.actionSub}>{acao.sub}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Dados locais</Text>
+          <Text style={styles.infoText}>Produtos e usuários são armazenados no dispositivo com AsyncStorage.</Text>
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-
-  glowTop: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: C.amber,
-    opacity: 0.05,
-    top: -60,
-    right: -60,
-  },
-
-  scroll: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 40,
-    paddingTop: 80,
-  },
-
-  // logo
-  logoWrapper: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  logoBg: {
-    backgroundColor: C.white,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  logo: {
-    width: 150,
-    height: 48,
-  },
-
-  // saudação
-  greetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  greetLeft: { gap: 2 },
-  kicker: {
-    fontSize: 11,
-    color: C.amber,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  greetName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text,
-    letterSpacing: -0.3,
-  },
-
-  outlineBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    backgroundColor: C.surface,
-  },
-  outlineBtnText: {
-    color: C.mutedLight,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-
-  // chip
-  chip: {
-    alignSelf: 'flex-start',
-    backgroundColor: C.amberSoft,
-    borderColor: C.amber,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  chipText: {
-    color: C.amber,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-
-  // card
-  card: {
-    backgroundColor: C.surface,
-    borderColor: C.border,
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 18,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  cardTitle: {
-    color: C.text,
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  cardText: {
-    color: C.muted,
-    lineHeight: 21,
-    fontSize: 14,
-  },
-  highlight: {
-    color: C.accent,
-    fontWeight: '800',
-  },
-
-  // quick cards
-  quickGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: C.surface,
-    borderColor: C.border,
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  quickCardAmber: {
-    borderColor: C.amber,
-    backgroundColor: C.amberSoft,
-  },
-  quickEmoji: {
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  quickTitle: {
-    fontWeight: '800',
-    color: C.text,
-    fontSize: 14,
-  },
-  quickSub: {
-    color: C.muted,
-    fontSize: 12,
-  },
-
-  // botão
-  primaryBtn: {
-    marginTop: 4,
-    backgroundColor: C.accent,
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: C.accent,
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  btnPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  primaryBtnText: {
-    color: C.white,
-    fontWeight: '800',
-    fontSize: 15,
-    letterSpacing: 0.3,
-  },
+  screen: { flex: 1, backgroundColor: C.bg },
+  content: { gap: 20, padding: 20, paddingTop: 60, paddingBottom: 40 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: C.amber, borderRadius: 12 },
+  brandMarkText: { color: C.white, fontSize: 20, fontWeight: '900' },
+  brand: { color: C.text, fontSize: 16, fontWeight: '900', letterSpacing: 3 },
+  role: { color: C.amber, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  hero: { gap: 6 },
+  kicker: { color: C.amber, fontSize: 13, fontWeight: '800' },
+  title: { color: C.text, fontSize: 28, fontWeight: '900', textTransform: 'capitalize' },
+  subtitle: { color: C.mutedLight, fontSize: 14 },
+  sectionHeader: { marginTop: 4 },
+  sectionTitle: { color: C.text, fontSize: 16, fontWeight: '900' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  metricCard: { width: '47%', gap: 3, borderWidth: 1, borderRadius: 16, padding: 16 },
+  metricValue: { fontSize: 24, fontWeight: '900' },
+  metricLabel: { color: C.text, fontSize: 13, fontWeight: '800' },
+  metricSub: { color: C.muted, fontSize: 11 },
+  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  actionCard: { width: '47%', gap: 5, backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, borderRadius: 16, padding: 16 },
+  actionLabel: { color: C.text, fontSize: 15, fontWeight: '900' },
+  actionSub: { color: C.muted, fontSize: 12 },
+  infoCard: { gap: 5, backgroundColor: C.surfaceHigh, borderColor: C.border, borderWidth: 1, borderRadius: 16, padding: 16 },
+  infoTitle: { color: C.text, fontSize: 14, fontWeight: '900' },
+  infoText: { color: C.mutedLight, fontSize: 13, lineHeight: 19 },
+  secondaryButton: { backgroundColor: C.surface, borderColor: C.border, borderRadius: 999, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10 },
+  secondaryButtonText: { color: C.mutedLight, fontSize: 13, fontWeight: '800' },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });
