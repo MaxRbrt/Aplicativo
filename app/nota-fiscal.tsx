@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { AppColors } from '@/constants/app-theme';
-import { AnimatedPressable } from '@/components/shop/AnimatedPressable';
-import { InvoiceView } from '@/components/shop/InvoiceView';
-import { shopStyles } from '@/components/shop/shop-styles';
-import { buscarPedidoPorId, Pedido } from '@/services/storage';
+import { AppColors } from '@/constantes/tema';
+import { BotaoAnimado } from '@/componentes/loja/BotaoAnimado';
+import { NotaFiscal } from '@/componentes/loja/NotaFiscal';
+import { estilosLoja } from '@/estilos/loja';
+import { buscarPedidoPorId, Pedido } from '@/servicos/armazenamento';
+import { estilosNotaFiscalTela as styles } from '@/estilos/telas/nota-fiscal-tela';
 
 const C = AppColors;
 
@@ -36,77 +37,52 @@ export default function NotaFiscalScreen() {
 
   if (carregando) {
     return (
-      <View style={[shopStyles.screen, styles.center]}>
+      <View style={[estilosLoja.tela, styles.center]}>
         <ActivityIndicator color={C.accent} size="large" />
-        <Text style={shopStyles.mutedText}>Carregando nota fiscal...</Text>
+        <Text style={estilosLoja.textoFraco}>Carregando nota fiscal...</Text>
       </View>
     );
   }
 
   if (!pedido) {
     return (
-      <View style={[shopStyles.screen, styles.emptyScreen]}>
-        <View style={[shopStyles.emptyBox, shopStyles.elevatedSurface]}>
-          <Text style={shopStyles.emptyTitle}>Nota fiscal não encontrada</Text>
-          <Text style={shopStyles.emptySub}>Volte para suas compras e tente abrir a nota novamente.</Text>
-          <AnimatedPressable style={shopStyles.primaryButton} onPress={() => router.replace('/(tabs)/compras')}>
-            <Text style={shopStyles.primaryButtonText}>Minhas compras</Text>
-          </AnimatedPressable>
+      <View style={[estilosLoja.tela, styles.emptyScreen]}>
+        <View style={[estilosLoja.caixaVazia, estilosLoja.superficieElevada]}>
+          <Text style={estilosLoja.vazioTitulo}>Nota fiscal não encontrada</Text>
+          <Text style={estilosLoja.vazioTexto}>Volte para suas compras e tente abrir a nota novamente.</Text>
+          <BotaoAnimado style={estilosLoja.botaoPrimario} onPress={() => router.replace('/(cliente)/compras')}>
+            <Text style={estilosLoja.botaoPrimarioTexto}>Minhas compras</Text>
+          </BotaoAnimado>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={shopStyles.screen}>
+    <View style={estilosLoja.tela}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={shopStyles.header}>
+        <View style={estilosLoja.cabecalho}>
           <View style={styles.headerText}>
-            <Text style={shopStyles.eyebrow}>Compra finalizada</Text>
-            <Text style={shopStyles.title}>Nota fiscal</Text>
-            <Text style={shopStyles.subtitle}>Guarde esse comprovante no histórico de compras.</Text>
+            <Text style={estilosLoja.selo}>Compra finalizada</Text>
+            <Text style={estilosLoja.titulo}>Nota fiscal</Text>
+            <Text style={estilosLoja.subtitulo}>Guarde esse comprovante no histórico de compras.</Text>
           </View>
-          <AnimatedPressable style={shopStyles.secondaryButton} onPress={() => router.replace('/(tabs)/compras')}>
-            <Text style={shopStyles.secondaryButtonText}>Compras</Text>
-          </AnimatedPressable>
+          <BotaoAnimado style={estilosLoja.botaoSecundario} onPress={() => router.replace('/(cliente)/compras')}>
+            <Text style={estilosLoja.botaoSecundarioTexto}>Compras</Text>
+          </BotaoAnimado>
         </View>
 
-        <InvoiceView pedido={pedido} />
+        <NotaFiscal pedido={pedido} />
 
         <View style={styles.actions}>
-          <AnimatedPressable style={shopStyles.primaryButton} onPress={() => router.replace('/(tabs)/destaques')}>
-            <Text style={shopStyles.primaryButtonText}>Continuar comprando</Text>
-          </AnimatedPressable>
-          <AnimatedPressable style={shopStyles.secondaryButton} onPress={() => router.replace('/(tabs)/compras')}>
-            <Text style={shopStyles.secondaryButtonText}>Ver minhas compras</Text>
-          </AnimatedPressable>
+          <BotaoAnimado style={estilosLoja.botaoPrimario} onPress={() => router.replace('/(cliente)/vitrine')}>
+            <Text style={estilosLoja.botaoPrimarioTexto}>Continuar comprando</Text>
+          </BotaoAnimado>
+          <BotaoAnimado style={estilosLoja.botaoSecundario} onPress={() => router.replace('/(cliente)/compras')}>
+            <Text style={estilosLoja.botaoSecundarioTexto}>Ver minhas compras</Text>
+          </BotaoAnimado>
         </View>
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    gap: 18,
-    padding: 18,
-    paddingTop: 58,
-    paddingBottom: 34,
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
-  },
-  actions: {
-    gap: 12,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  emptyScreen: {
-    justifyContent: 'center',
-    padding: 18,
-  },
-});

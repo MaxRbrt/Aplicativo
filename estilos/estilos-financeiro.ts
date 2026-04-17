@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { AppColors } from '@/constants/app-theme';
+import { AppColors } from '@/constantes/tema';
 
 const C = AppColors;
 

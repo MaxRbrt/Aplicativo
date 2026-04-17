@@ -1,9 +1,9 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AppColors } from '@/constants/app-theme';
+import { AppColors } from '@/constantes/tema';
 
-export default function AdminTabsLayout() {
+export default function LayoutAbasAdmin() {
   return (
     <Tabs
       screenOptions={{

@@ -1,18 +1,19 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { AppColors } from '@/constants/app-theme';
-import { AnimatedPressable } from '@/components/shop/AnimatedPressable';
+import { AppColors } from '@/constantes/tema';
+import { BotaoAnimado } from '@/componentes/loja/BotaoAnimado';
 import { estilosGlobais } from '@/estilos/estilos-globais';
 import { estilosCartoes } from '@/estilos/estilos-cartoes';
 import { estilosFinanceiro } from '@/estilos/estilos-financeiro';
+import { estilosAdminFaturamento as styles } from '@/estilos/telas/admin-faturamento';
 import {
   ProdutoFinanceiro,
   ResumoFinanceiro,
   carregarResumoFinanceiroAdmin,
   calcularQuantidadeCarrinho,
   formatarMoeda,
-} from '@/services/storage';
+} from '@/servicos/armazenamento';
 
 const C = AppColors;
 
@@ -68,9 +69,9 @@ export default function FaturamentoAdmin() {
                 <Text style={estilosGlobais.titulo}>Faturamento</Text>
                 <Text style={estilosGlobais.subtitulo}>Vendas, lucro estimado, custos e desempenho dos produtos.</Text>
               </View>
-              <AnimatedPressable style={styles.botaoVoltar} onPress={() => router.back()}>
+              <BotaoAnimado style={styles.botaoVoltar} onPress={() => router.back()}>
                 <Text style={styles.botaoVoltarTexto}>Voltar</Text>
-              </AnimatedPressable>
+              </BotaoAnimado>
             </View>
 
             <View style={estilosFinanceiro.destaque}>
@@ -159,16 +160,3 @@ function ProdutoRanking({ item, posicao }: { item: ProdutoFinanceiro; posicao: n
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  centralizado: { alignItems: 'center', justifyContent: 'center', gap: 10 },
-  cabecalhoLista: { gap: 18 },
-  botaoVoltar: { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
-  botaoVoltarTexto: { color: C.mutedLight, fontSize: 13, fontWeight: '900' },
-  secaoLista: { marginTop: 4 },
-  posicao: { width: 30, height: 30, textAlign: 'center', textAlignVertical: 'center', color: C.white, backgroundColor: C.accent, borderRadius: 10, fontWeight: '900' },
-  rankingTexto: { flex: 1 },
-  pedidosRecentes: { gap: 12, marginTop: 8 },
-  pedidoNumero: { color: C.text, fontSize: 15, fontWeight: '900' },
-  pedidoTotal: { color: C.accent, fontSize: 15, fontWeight: '900' },
-});

@@ -3,21 +3,20 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useEsquemaCores } from '@/ganchos/usar-esquema-cores';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const esquemaCores = useEsquemaCores();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={esquemaCores === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="entrar" options={{ headerShown: false }} />
         <Stack.Screen name="criar-conta" options={{ headerShown: false }} />
         <Stack.Screen name="pagina-erro" options={{ title: 'Erro' }} />
         <Stack.Screen name="nota-fiscal" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(cliente)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
