@@ -129,8 +129,8 @@ export default function AdminHome() {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Dados locais</Text>
-          <Text style={styles.infoText}>Produtos e usuários são armazenados no dispositivo com AsyncStorage.</Text>
+          <Text style={styles.infoTitle}>Armazenamento</Text>
+          <Text style={styles.infoText}>Produtos ficam no dispositivo e usuários são salvos no MySQL.</Text>
         </View>
       </ScrollView>
     </View>

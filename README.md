@@ -1,10 +1,10 @@
 # Aplicativo Mobile
 
-Projeto mobile em Expo Router com fluxo de loja, painel administrativo e persistência local usando AsyncStorage.
+Projeto mobile em Expo Router com fluxo de loja, painel administrativo, usuários via API PHP/MySQL e dados da loja em AsyncStorage.
 
 ## Funcionalidades
 
-- Login e criação de conta com perfis de admin e cliente.
+- Login e criação de conta usando API PHP/MySQL, com perfis de admin e cliente.
 - Painel admin para produtos, usuários e faturamento.
 - Vitrine, carrinho, histórico de compras e nota fiscal para cliente.
 - Carrinho e pedidos separados por usuário logado.
@@ -17,7 +17,8 @@ Projeto mobile em Expo Router com fluxo de loja, painel administrativo e persist
 - `constantes`: tema e valores globais.
 - `estilos`: estilos separados das telas e componentes.
 - `ganchos`: hooks reutilizáveis.
-- `servicos/armazenamento`: regras de AsyncStorage separadas por domínio.
+- `servicos/api`: integração com a API PHP/MySQL de usuários.
+- `servicos/armazenamento`: regras locais de produtos, carrinho, pedidos, categorias e sessão.
 
 ## Como rodar
 

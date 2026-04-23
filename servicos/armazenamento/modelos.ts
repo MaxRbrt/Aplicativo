@@ -17,6 +17,16 @@ export type ItemCarrinho = {
 
 export type PerfilUsuario = 'admin' | 'cliente';
 
+export const EMAIL_ADMIN_PADRAO = 'admin@loja.com';
+
+export function usuarioEhAdminPadrao(email: string) {
+  return email.trim().toLowerCase() === EMAIL_ADMIN_PADRAO;
+}
+
+export function perfilPorEmail(email: string): PerfilUsuario {
+  return usuarioEhAdminPadrao(email) ? 'admin' : 'cliente';
+}
+
 export type Usuario = {
   id: string;
   nome: string;
@@ -61,13 +71,3 @@ export type ResumoFinanceiro = {
   produtoMaisLucrativo: ProdutoFinanceiro | null;
   pedidosRecentes: Pedido[];
 };
-
-export const USUARIOS_PADRAO: Usuario[] = [
-  {
-    id: 'admin-padrao',
-    nome: 'Administrador',
-    email: 'admin@loja.com',
-    senha: '654321',
-    perfil: 'admin',
-  },
-];

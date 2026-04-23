@@ -4,12 +4,12 @@ import { useRouter } from 'expo-router';
 import { AppColors } from '@/constantes/tema';
 import { estilosAdminUsuarios as styles } from '@/estilos/telas/admin-usuarios';
 import {
-  PerfilUsuario,
   Usuario,
   carregarUsuarios,
   criarUsuario,
   limparDadosDeUsuariosRemovidos,
-  salvarUsuarios,
+  removerUsuario,
+  usuarioEhAdminPadrao,
 } from '@/servicos/armazenamento';
 
 const C = AppColors;
@@ -57,7 +57,6 @@ export default function UsuariosAdmin() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [perfil, setPerfil] = useState<PerfilUsuario>('cliente');
   const [busca, setBusca] = useState('');
 
   const carregar = useCallback(async () => {
@@ -86,12 +85,11 @@ export default function UsuariosAdmin() {
     setNome('');
     setEmail('');
     setSenha('');
-    setPerfil('cliente');
   };
 
   const salvar = async () => {
     try {
-      const novoUsuario = await criarUsuario({ nome, email, senha, perfil });
+      const novoUsuario = await criarUsuario({ nome, email, senha, perfil: 'cliente' });
       setUsuarios((lista) => [...lista, novoUsuario]);
       limpar();
       setAba('lista');
@@ -103,15 +101,24 @@ export default function UsuariosAdmin() {
   };
 
   const remover = (usuario: Usuario) => {
+    if (usuarioEhAdminPadrao(usuario.email)) {
+      Alert.alert('Ação bloqueada', 'O administrador padrão não pode ser excluído.');
+      return;
+    }
+
     Alert.alert('Remover usuário', `Deseja excluir ${usuario.nome}?`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',
         style: 'destructive',
         onPress: async () => {
-          const novaLista = usuarios.filter((item) => item.id !== usuario.id);
-          await salvarUsuarios(novaLista);
-          setUsuarios(novaLista);
+          try {
+            await removerUsuario(usuario);
+            setUsuarios((lista) => lista.filter((item) => item.id !== usuario.id));
+          } catch (error) {
+            const mensagem = error instanceof Error ? error.message : 'Não foi possível excluir o usuário.';
+            Alert.alert('Atenção', mensagem);
+          }
         },
       },
     ]);
@@ -156,23 +163,6 @@ export default function UsuariosAdmin() {
               keyboardType="email-address"
             />
             <Campo label="Senha" value={senha} onChangeText={setSenha} placeholder="Mínimo 6 caracteres" secureTextEntry />
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Perfil</Text>
-              <View style={styles.profileRow}>
-                {(['cliente', 'admin'] as PerfilUsuario[]).map((tipo) => (
-                  <Pressable
-                    key={tipo}
-                    style={[styles.profileButton, perfil === tipo && styles.profileButtonActive]}
-                    onPress={() => setPerfil(tipo)}
-                  >
-                    <Text style={[styles.profileButtonText, perfil === tipo && styles.profileButtonTextActive]}>
-                      {tipo === 'admin' ? 'Admin' : 'Cliente'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
           </View>
 
           <Pressable style={styles.primaryButton} onPress={salvar}>
@@ -204,21 +194,29 @@ export default function UsuariosAdmin() {
               <Text style={styles.emptySub}>Cadastre usuários pela aba Cadastro.</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.userCard}>
-              <View style={[styles.avatar, item.perfil === 'admin' ? styles.avatarAdmin : styles.avatarClient]}>
-                <Text style={styles.avatarText}>{item.nome.charAt(0).toUpperCase()}</Text>
+          renderItem={({ item }) => {
+            const adminProtegido = usuarioEhAdminPadrao(item.email);
+
+            return (
+              <View style={styles.userCard}>
+                <View style={[styles.avatar, item.perfil === 'admin' ? styles.avatarAdmin : styles.avatarClient]}>
+                  <Text style={styles.avatarText}>{item.nome.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{item.nome}</Text>
+                  <Text style={styles.userEmail}>{item.email}</Text>
+                  <Text style={styles.userProfile}>{item.perfil === 'admin' ? 'Admin' : 'Cliente'}</Text>
+                </View>
+                {adminProtegido ? (
+                  <Text style={styles.userProfile}>Protegido</Text>
+                ) : (
+                  <Pressable style={styles.removeButton} onPress={() => remover(item)}>
+                    <Text style={styles.removeButtonText}>Excluir</Text>
+                  </Pressable>
+                )}
               </View>
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.nome}</Text>
-                <Text style={styles.userEmail}>{item.email}</Text>
-                <Text style={styles.userProfile}>{item.perfil === 'admin' ? 'Admin' : 'Cliente'}</Text>
-              </View>
-              <Pressable style={styles.removeButton} onPress={() => remover(item)}>
-                <Text style={styles.removeButtonText}>Excluir</Text>
-              </Pressable>
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </View>

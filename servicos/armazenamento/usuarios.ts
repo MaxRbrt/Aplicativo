@@ -1,7 +1,8 @@
-import { limparDadosDeUsuariosRemovidos } from './limpeza';
-import { NovoUsuario, Usuario } from './modelos';
-import { criarId, normalizarEmail } from './nucleo';
-import { carregarUsuariosBase, salvarUsuariosBase } from './usuarios-repositorio';
+import { limparDadosDeUsuario } from './limpeza';
+import { autenticarUsuarioApi, criarUsuarioApi, excluirUsuarioApi } from '../api/usuarios';
+import { NovoUsuario, Usuario, usuarioEhAdminPadrao } from './modelos';
+import { normalizarEmail } from './nucleo';
+import { carregarUsuariosBase } from './usuarios-repositorio';
 
 export function validarNovoUsuario(usuario: NovoUsuario) {
   if (!usuario.nome.trim() || !usuario.email.trim() || !usuario.senha.trim()) {
@@ -23,42 +24,33 @@ export async function carregarUsuarios() {
   return carregarUsuariosBase();
 }
 
-export async function salvarUsuarios(usuarios: Usuario[]) {
-  await salvarUsuariosBase(usuarios);
-  await limparDadosDeUsuariosRemovidos();
-}
-
 export async function criarUsuario(dados: NovoUsuario) {
   const erro = validarNovoUsuario(dados);
   if (erro) {
     throw new Error(erro);
   }
 
-  const usuarios = await carregarUsuarios();
   const email = normalizarEmail(dados.email);
-  const emailJaExiste = usuarios.some((usuario) => normalizarEmail(usuario.email) === email);
 
-  if (emailJaExiste) {
-    throw new Error('Este e-mail já está cadastrado.');
-  }
-
-  const novoUsuario: Usuario = {
-    id: criarId('usuario'),
+  return criarUsuarioApi({
+    ...dados,
     nome: dados.nome.trim(),
     email,
     senha: dados.senha.trim(),
-    perfil: dados.perfil,
-  };
-
-  await salvarUsuarios([...usuarios, novoUsuario]);
-  return novoUsuario;
+  });
 }
 
 export async function autenticarUsuario(email: string, senha: string) {
-  const usuarios = await carregarUsuarios();
   const emailNormalizado = normalizarEmail(email);
 
-  return usuarios.find(
-    (usuario) => normalizarEmail(usuario.email) === emailNormalizado && usuario.senha === senha
-  );
+  return autenticarUsuarioApi(emailNormalizado, senha.trim());
+}
+
+export async function removerUsuario(usuario: Usuario) {
+  if (usuarioEhAdminPadrao(usuario.email)) {
+    throw new Error('O administrador padrão não pode ser excluído.');
+  }
+
+  await excluirUsuarioApi(usuario);
+  await limparDadosDeUsuario(usuario.email);
 }
